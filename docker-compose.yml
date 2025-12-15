@@ -3,8 +3,6 @@ services:
   redis:
     image: redis:7-alpine
     container_name: wzj_redis
-    ports:
-      - "6379:6379"
     volumes:
       - redis-data:/data
 
@@ -15,10 +13,10 @@ services:
       - redis
     environment:
       - PORT=8080
-      - SERVER_ADDRESS=http://localhost:8080
+      - SERVER_ADDRESS=http://localhost:18080
       - REDIS_ADDRESS=redis:6379
     ports:
-      - "8080:8080"
+      - "18080:8080"
     volumes:
       - app-data:/app/data
     # If you prefer secrets.json on host:

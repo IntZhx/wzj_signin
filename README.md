@@ -36,7 +36,7 @@ go run .
 
 3) 打开页面
 
-- http://localhost:8080/ （会自动跳转到 `/home`）
+- http://localhost:8080/home
 
 ## Docker 运行
 
@@ -48,8 +48,8 @@ docker compose up -d --build
 
 启动后：
 
-- 应用：http://localhost:8080/
-- Redis：localhost:6379（容器内网络地址为 `redis:6379`）
+- 应用：http://localhost:18080/home
+- Redis：仅供容器内部使用（地址 `redis:6379`，默认不再映射到宿主机端口）
 
 ### 方式二：纯 Docker（使用外部 Redis）
 
@@ -58,9 +58,9 @@ docker build -t wzj-sign:local .
 
 docker run -d \
   --name wzj_sign \
-  -p 8080:8080 \
+  -p 18080:8080 \
   -e PORT=8080 \
-  -e SERVER_ADDRESS=http://localhost:8080 \
+  -e SERVER_ADDRESS=http://localhost:18080 \
   -e REDIS_ADDRESS=host.docker.internal:6379 \
   -v %CD%/data:/app/data \
   wzj-sign:local
@@ -131,6 +131,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run-local.ps1 -Port 8081
 ### 2) config.yml 编码问题
 
 请确保 `config.yml` 为 UTF-8 编码，否则可能出现 `invalid trailing UTF-8 octet`。
+
+> 提示：Windows 上常见端口冲突（例如 Steam 占用 8080、Memurai 占用 6379）。如果你坚持使用 8080/6379，请先关闭对应程序或修改端口映射。
 
 ## 致谢
 
