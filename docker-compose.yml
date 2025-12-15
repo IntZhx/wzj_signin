@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: wzj_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  app:
+    build: .
+    container_name: wzj_app
+    depends_on:
+      - redis
+    environment:
+      - PORT=8080
+      - SERVER_ADDRESS=http://localhost:8080
+      - REDIS_ADDRESS=redis:6379
+    ports:
+      - "8080:8080"
+    volumes:
+      - app-data:/app/data
+    # If you prefer secrets.json on host:
+    # - ./data/secrets.json:/app/data/secrets.json:ro
+
+volumes:
+  redis-data:
+  app-data:

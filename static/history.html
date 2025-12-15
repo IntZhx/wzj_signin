@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>历史 · 微助教 OpenID 监控</title>
+		<link rel="stylesheet" href="/static/app.css?v=20251214_11" />
+	</head>
+
+	<body data-page="remind">
+		<div class="shell">
+			<div class="app">
+				<aside class="sidebar">
+					<div class="brand" title="WZJ">W</div>
+
+					<div class="nav" aria-label="Navigation">
+						<a class="navbtn" href="/home" data-page="home" title="主页">🏠</a>
+						<a class="navbtn" href="/submit" data-page="submit" title="提交">➕</a>
+						<a class="navbtn" href="/history" data-page="remind" title="历史">🕘</a>
+						<a class="navbtn" href="/settings" data-page="settings" title="设置">⚙️</a>
+					</div>
+
+					<div class="sidebar-spacer"></div>
+				</aside>
+
+				<main class="main">
+					<div class="topbar">
+						<div class="title">
+							<h1>历史</h1>
+							<p>本机事件记录与轮询状态</p>
+						</div>
+						<div class="actions">
+							<div class="search" role="search">
+								<span aria-hidden="true">🔎</span>
+								<input type="text" placeholder="搜索（未启用）" autocomplete="off" aria-label="搜索" />
+							</div>
+							<a class="pill" href="/submit">去提交</a>
+						</div>
+					</div>
+
+					<section class="pageGrid single">
+						<div class="card">
+							<h2>监控轮询</h2>
+							<p class="sub">保持页面打开：可接收二维码签到提醒；GPS 签到提交也会记录在下方事件列表</p>
+
+							<div class="small-actions" style="margin-top: 12px">
+								<button class="pill primary" id="remindStartPollBtn" type="button">开始轮询</button>
+								<button class="pill" id="remindStopPollBtn" type="button">停止轮询</button>
+								<span class="badge push-right">监控中：<span id="monitorCount">0</span> 个 OpenID</span>
+							</div>
+							<div class="hint" id="pollHint" style="margin-top: 10px"></div>
+						</div>
+
+						<div class="card">
+							<h2>事件列表</h2>
+							<p class="sub">包含“GPS 签到提交 / 二维码签到提醒”等事件</p>
+
+							<div id="eventList" style="margin-top: 12px"></div>
+						</div>
+					</section>
+				</main>
+			</div>
+		</div>
+
+		<div class="modal" id="modal" aria-hidden="true">
+			<div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+				<div class="modal-head">
+					<p class="modal-title" id="modalTitle">提示</p>
+					<button class="modal-close" id="modalCloseBtn" type="button" aria-label="Close">×</button>
+				</div>
+				<div class="modal-body" id="modalBody"></div>
+				<div class="modal-foot">
+					<button class="ghost" id="modalActionBtn" type="button" style="display: none">打开二维码页面</button>
+					<button class="pill" id="modalOkBtn" type="button">确定</button>
+				</div>
+			</div>
+		</div>
+
+		<script src="/static/app.js?v=20251214_11"></script>
+	</body>
+</html>

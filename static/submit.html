@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>提交 · 微助教 OpenID 监控</title>
+		<link rel="stylesheet" href="/static/app.css?v=20251214_11" />
+	</head>
+
+	<body data-page="submit">
+		<div class="shell">
+			<div class="app">
+				<aside class="sidebar">
+					<div class="brand" title="WZJ">W</div>
+
+					<div class="nav" aria-label="Navigation">
+						<a class="navbtn" href="/home" data-page="home" title="主页">🏠</a>
+						<a class="navbtn" href="/submit" data-page="submit" title="提交">➕</a>
+						<a class="navbtn" href="/history" data-page="remind" title="历史">🕘</a>
+						<a class="navbtn" href="/settings" data-page="settings" title="设置">⚙️</a>
+					</div>
+
+					<div class="sidebar-spacer"></div>
+				</aside>
+
+				<main class="main">
+					<div class="topbar">
+						<div class="title">
+							<h1>提交</h1>
+							<p>登记 OpenID + 邮箱 + GPS 标签</p>
+						</div>
+						<div class="actions">
+							<div class="search" role="search">
+								<span aria-hidden="true">🔎</span>
+								<input type="text" placeholder="搜索（未启用）" autocomplete="off" aria-label="搜索" />
+							</div>
+							<a class="pill" href="/settings">去设置默认值</a>
+						</div>
+					</div>
+
+					<section class="pageGrid">
+						<div class="card tint">
+							<h2>登记信息</h2>
+							<p class="sub">支持直接粘贴包含 openid 的 URL</p>
+
+							<form id="submitForm" class="form" style="margin-top: 14px">
+								<div class="field">
+									<label for="inputOpenId">OpenID / URL</label>
+									<input id="inputOpenId" name="openId" type="text" placeholder="粘贴 openid 或包含 openid 的链接" autocomplete="off" />
+									<div class="help">系统会自动从链接中提取 openid</div>
+								</div>
+
+								<div class="field">
+									<label for="gpsLabelSelect">GPS 标签</label>
+									<select id="gpsLabelSelect" name="gpsLabel"></select>
+									<div class="help">提交时会使用“设置页”的默认邮箱与所选 GPS 标签</div>
+								</div>
+
+								<div class="small-actions" style="margin-top: 6px">
+									<button class="pill primary" id="submitBtn" type="submit">提交</button>
+									<span class="badge">
+										<span class="dot" id="statusDot"></span>
+										<span id="statusText">未提交</span>
+									</span>
+								</div>
+							</form>
+
+							<div class="badgeRow" style="margin-top: 14px">
+								<span class="badge">监控中：<span id="monitorCount">0</span> 个 OpenID</span>
+								<span class="badge">建议：保持页面常开</span>
+							</div>
+						</div>
+
+						<div class="card">
+							<h2>说明</h2>
+							<p class="sub">提交后会自动加入“监控池”，后续有二维码就会提醒</p>
+
+							<div class="softBlock" style="margin-top: 14px">
+								<h2 style="margin-bottom: 6px">常见问题</h2>
+								<div class="sub" style="margin-top: 0; line-height: 1.7">
+									1）OpenID 支持多个同时工作；你提交过的 openid 会出现在监控池里。<br />
+									2）二维码提醒依赖页面轮询：保持页面打开即可接收弹窗。<br />
+									3）历史记录保存在本机浏览器 localStorage，不会同步到服务器。
+								</div>
+							</div>
+						</div>
+					</section>
+				</main>
+			</div>
+		</div>
+
+		<div class="modal" id="modal" aria-hidden="true">
+			<div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+				<div class="modal-head">
+					<p class="modal-title" id="modalTitle">提示</p>
+					<button class="modal-close" id="modalCloseBtn" type="button" aria-label="Close">×</button>
+				</div>
+				<div class="modal-body" id="modalBody"></div>
+				<div class="modal-foot">
+					<button class="ghost" id="modalActionBtn" type="button" style="display: none">打开二维码页面</button>
+					<button class="pill" id="modalOkBtn" type="button">确定</button>
+				</div>
+			</div>
+		</div>
+
+		<script src="/static/app.js?v=20251214_11"></script>
+	</body>
+</html>

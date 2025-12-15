@@ -1,0 +1,12 @@
+# Local machine configs / secrets
+/data/*.json
+/data/secrets.json
+/config.yml.bak_*
+/config.yml
+/local/
+
+# Logs
+*.log
+
+# IDE
+/.idea/

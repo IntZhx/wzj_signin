@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>设置 · 微助教 OpenID 监控</title>
+		<link rel="stylesheet" href="/static/app.css?v=20251214_11" />
+	</head>
+
+	<body data-page="settings">
+		<div class="shell">
+			<div class="app">
+				<aside class="sidebar">
+					<div class="brand" title="WZJ">W</div>
+
+					<div class="nav" aria-label="Navigation">
+						<a class="navbtn" href="/home" data-page="home" title="主页">🏠</a>
+						<a class="navbtn" href="/submit" data-page="submit" title="提交">➕</a>
+						<a class="navbtn" href="/history" data-page="remind" title="历史">🕘</a>
+						<a class="navbtn" href="/settings" data-page="settings" title="设置">⚙️</a>
+					</div>
+
+					<div class="sidebar-spacer"></div>
+				</aside>
+
+				<main class="main">
+					<div class="topbar">
+						<div class="title">
+							<h1>设置</h1>
+							<p>默认邮箱与 GPS 位置管理（保存在本机）</p>
+						</div>
+						<div class="actions">
+							<div class="search" role="search">
+								<span aria-hidden="true">🔎</span>
+								<input type="text" placeholder="搜索（未启用）" autocomplete="off" aria-label="搜索" />
+							</div>
+							<a class="pill" href="/submit">去提交</a>
+						</div>
+					</div>
+
+					<section class="pageGrid settings">
+						<div class="stack">
+							<div class="card">
+								<h2>GPS 标签</h2>
+								<p class="sub">维护一组“标签 → 经纬度”，提交页按标签选择</p>
+
+								<div class="form" style="margin-top: 14px">
+									<div class="grid2">
+										<div class="field">
+											<label for="newGpsLabel">标签</label>
+											<input id="newGpsLabel" type="text" placeholder="例如：宿舍 / 图书馆" autocomplete="off" />
+										</div>
+										<div class="field">
+											<label for="newGpsLocation">经纬度</label>
+											<input id="newGpsLocation" type="text" placeholder="例如：116.12345,39.12345" autocomplete="off" />
+											<div class="help">格式：lng,lat（英文逗号）</div>
+										</div>
+									</div>
+
+									<div class="small-actions">
+										<button class="pill primary" id="saveGpsLabelBtn" type="button">添加 / 更新</button>
+									</div>
+								</div>
+
+								<div class="softBlock" style="margin-top: 14px">
+									<h2 style="margin-bottom: 6px">标签列表</h2>
+									<div id="gpsLabelList" class="badgeRow" style="margin-top: 10px"></div>
+								</div>
+							</div>
+
+							<div class="card tint emailCompact">
+								<h2>默认邮箱</h2>
+								<p class="sub">提交页会使用这个邮箱（保存在本机）</p>
+
+								<div class="form" style="margin-top: 14px">
+									<div class="field">
+										<label for="defaultEmail">邮箱</label>
+										<div class="emailRow">
+											<input id="defaultEmail" type="email" placeholder="name@example.com" autocomplete="off" />
+											<button class="pill primary" id="saveDefaultEmailBtn" type="button">保存</button>
+										</div>
+										<div class="help">保存在本机，不需要手动编辑配置文件</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<div class="card">
+							<h2>服务端配置</h2>
+							<p class="sub">用于邮件提醒与拟真延迟（保存在本机服务器）</p>
+
+								<div class="form" style="margin-top: 14px">
+									<div class="field">
+										<label for="normalDelay">二维码检测后延迟（秒）</label>
+										<input id="normalDelay" type="number" min="0" max="600" step="1" placeholder="例如：20" autocomplete="off" />
+										<div class="help">用于拟真：检测到二维码后等待 N 秒再继续（0 表示不延迟；仅影响二维码流程，不影响 GPS 签到）</div>
+									</div>
+
+									<div class="field">
+										<label for="mailEnabled">邮件提醒</label>
+										<select id="mailEnabled">
+											<option value="on">启用</option>
+											<option value="off">关闭</option>
+										</select>
+									</div>
+
+									<div class="grid2">
+										<div class="field">
+											<label for="mailHost">SMTP Host</label>
+											<input id="mailHost" type="text" placeholder="smtp.example.com" autocomplete="off" />
+										</div>
+										<div class="field">
+											<label for="mailPort">SMTP Port</label>
+											<input id="mailPort" type="number" min="0" max="65535" step="1" placeholder="465" autocomplete="off" />
+										</div>
+									</div>
+
+									<div class="field">
+										<label for="mailUsername">用户名</label>
+										<input id="mailUsername" type="text" placeholder="admin@example.com" autocomplete="off" />
+									</div>
+									<div class="field">
+										<label for="mailFrom">发件人（From）</label>
+										<input id="mailFrom" type="text" placeholder="admin@example.com" autocomplete="off" />
+									</div>
+									<div class="field">
+										<label for="mailPassword">密码/授权码</label>
+										<input id="mailPassword" type="password" placeholder="留空表示不修改" autocomplete="new-password" />
+										<div class="help" id="mailPasswordHint">留空表示不修改已保存的密码</div>
+									</div>
+
+									<div class="small-actions">
+										<button class="pill primary" id="saveServerConfigBtn" type="button">保存服务端配置</button>
+									</div>
+								</div>
+						</div>
+					</section>
+				</main>
+			</div>
+		</div>
+
+		<div class="modal" id="modal" aria-hidden="true">
+			<div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+				<div class="modal-head">
+					<p class="modal-title" id="modalTitle">提示</p>
+					<button class="modal-close" id="modalCloseBtn" type="button" aria-label="Close">×</button>
+				</div>
+				<div class="modal-body" id="modalBody"></div>
+				<div class="modal-foot">
+					<button class="ghost" id="modalActionBtn" type="button" style="display: none">打开二维码页面</button>
+					<button class="pill" id="modalOkBtn" type="button">确定</button>
+				</div>
+			</div>
+		</div>
+
+		<script src="/static/app.js?v=20251214_11"></script>
+	</body>
+</html>

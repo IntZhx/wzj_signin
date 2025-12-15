@@ -1,0 +1,9 @@
+{
+  "defaultEmail": "name@example.com",
+  "gpsLabels": [
+    {
+      "label": "宿舍",
+      "location": "116.12345,39.12345"
+    }
+  ]
+}

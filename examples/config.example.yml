@@ -1,0 +1,22 @@
+# Example configuration (non-sensitive). You can omit this file entirely.
+# Place your real config in ./local/config.yml (recommended) or ./config.yml.
+
+redis:
+  address: "localhost:6379"
+  password: ""  # leave empty; use data/secrets.json instead
+  db: 0
+
+app:
+  interval: 8
+  normal_delay: 20
+  url: http://localhost:8080
+  lat: 23.038859
+  lon: 113.399319
+
+mail:
+  enabled: false
+  host: "smtp.example.com"
+  port: 465
+  username: "your@email.com"
+  password: ""  # leave empty; use data/secrets.json instead
+  from: "your@email.com"

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>主页 · 微助教 OpenID 监控</title>
+		<link rel="stylesheet" href="/static/app.css?v=20251214_11" />
+	</head>
+	<body data-page="home">
+		<div class="shell">
+			<div class="app">
+				<aside class="sidebar">
+					<div class="brand" title="WZJ">W</div>
+
+					<div class="nav" aria-label="Navigation">
+						<a class="navbtn" href="/home" data-page="home" title="主页">🏠</a>
+						<a class="navbtn" href="/submit" data-page="submit" title="提交">➕</a>
+						<a class="navbtn" href="/history" data-page="remind" title="历史">🕘</a>
+						<a class="navbtn" href="/settings" data-page="settings" title="设置">⚙️</a>
+					</div>
+
+					<div class="sidebar-spacer"></div>
+				</aside>
+
+				<main class="main">
+					<div class="topbar">
+						<div class="title">
+							<h1>主页</h1>
+							<p>微助教签到助手</p>
+						</div>
+						<div class="actions">
+							<div class="search" role="search">
+								<span aria-hidden="true">🔎</span>
+								<input type="text" placeholder="搜索（未启用）" autocomplete="off" aria-label="搜索" />
+							</div>
+							<button class="pill primary" id="quickNoticeBtn" type="button">使用说明</button>
+						</div>
+					</div>
+
+					<section class="pageGrid">
+						<div class="card tint">
+							<h2>概览</h2>
+
+							<div class="split2" style="margin-top: 14px">
+								<div class="kpi">
+									<div class="label">监控状态</div>
+									<div class="value">运行中</div>
+									<div class="hint">保持页面打开可接收签到提醒（二维码弹窗）</div>
+								</div>
+								<div class="kpi">
+									<div class="label">提醒</div>
+									<div class="value">已开启</div>
+									<div class="hint">二维码签到会弹窗并可一键打开</div>
+								</div>
+							</div>
+
+							<div class="softBlock" style="margin-top: 14px">
+								<h2 style="margin-bottom: 6px">数据统计</h2>
+								<p class="sub" style="margin-top: 0">基于本机历史记录（不会同步到服务器）</p>
+
+								<div class="split2" style="margin-top: 12px">
+									<div class="kpi">
+										<div class="label">累计签到提醒次数</div>
+										<div class="value" id="statTotalQr">0</div>
+										<div class="hint" id="statLastQr">最近一次：—</div>
+									</div>
+									<div class="kpi">
+										<div class="label">累计提交次数</div>
+										<div class="value" id="statTotalSubmit">0</div>
+										<div class="hint" id="statLastSubmit">最近一次：—</div>
+									</div>
+								</div>
+
+								<div style="margin-top: 14px">
+									<div class="label" style="font-size: 12px; color: var(--muted)">近 7 天签到提醒次数</div>
+									<div
+										id="statChart"
+										style="margin-top: 10px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; align-items: end; height: 92px"
+									></div>
+									<div
+										id="statChartLabels"
+										style="margin-top: 8px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; font-size: 11px; color: var(--muted); text-align: center"
+									></div>
+								</div>
+							</div>
+						</div>
+
+						<div class="card">
+							<h2>使用说明</h2>
+							<p class="sub">整个程序的操作流程与注意事项</p>
+
+							<div class="softBlock" style="min-height: 220px; margin-top: 14px">
+								<h2 style="margin-bottom: 6px">怎么用</h2>
+								<div class="sub" id="noticeBox" style="margin-top: 0; line-height: 1.7">
+									1）到【设置】保存默认邮箱（提交时会自动使用）<br />
+									2）到【设置】添加 GPS 标签（标签名 + 经纬度 lng,lat）<br />
+									3）到【提交】粘贴 OpenID/链接，选择 GPS 标签，点击提交<br />
+									说明：二维码签到（扫码）与 GPS 签到互不影响<br />
+									4）提交后会加入监控池；保持页面打开即可接收二维码弹窗<br />
+									5）到【历史】可开始/停止轮询，查看记录，并可再次打开二维码<br /><br />
+									提示：二维码弹窗可能被浏览器拦截，拦截后可去【历史】再次打开。
+								</div>
+							</div>
+
+							<div class="small-actions">
+								<button class="ghost" id="copyNoticeBtn" type="button">复制</button>
+							</div>
+						</div>
+					</section>
+				</main>
+			</div>
+		</div>
+
+		<div class="modal" id="modal" aria-hidden="true">
+			<div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+				<div class="modal-head">
+					<p class="modal-title" id="modalTitle">提示</p>
+					<button class="modal-close" id="modalCloseBtn" type="button" aria-label="Close">×</button>
+				</div>
+				<div class="modal-body" id="modalBody"></div>
+				<div class="modal-foot">
+					<button class="ghost" id="modalActionBtn" type="button" style="display: none">打开二维码页面</button>
+					<button class="pill" id="modalOkBtn" type="button">确定</button>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			(() => {
+				const chart = document.getElementById("statChart");
+				const labels = document.getElementById("statChartLabels");
+				if (!chart || !labels) return;
+				// 兜底：若外部脚本未能及时渲染，至少展示近7天日期与占位柱
+				if (chart.childElementCount > 0 || labels.childElementCount > 0) return;
+
+				const days = [];
+				const now = new Date();
+				now.setHours(0, 0, 0, 0);
+				for (let i = 6; i >= 0; i--) days.push(new Date(now.getTime() - i * 86400000));
+
+				chart.innerHTML = "";
+				labels.innerHTML = "";
+
+				const empty = document.createElement("div");
+				empty.className = "chartEmpty";
+				empty.textContent = "近 7 天暂无签到提醒记录";
+				chart.appendChild(empty);
+
+				days.forEach((d) => {
+					const bar = document.createElement("div");
+					bar.style.height = "8px";
+					bar.style.borderRadius = "12px";
+					bar.style.border = "1px solid var(--border)";
+					bar.style.background = "rgba(234, 210, 215, 0.35)";
+					bar.style.opacity = "0.55";
+					chart.appendChild(bar);
+
+					const lab = document.createElement("div");
+					const mm = String(d.getMonth() + 1).padStart(2, "0");
+					const dd = String(d.getDate()).padStart(2, "0");
+					lab.textContent = `${mm}/${dd}`;
+					labels.appendChild(lab);
+				});
+			})();
+		</script>
+		<script src="/static/app.js?v=20251214_11"></script>
+	</body>
+</html>

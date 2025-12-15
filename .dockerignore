@@ -1,0 +1,16 @@
+# Exclude local artifacts
+**/.git
+**/.gitignore
+**/.idea
+**/.vscode
+**/node_modules
+**/dist
+**/build
+
+# Exclude local data and backups
+/data/
+/config.yml.bak_*
+
+# Exclude tests and caches
+**/*.tmp
+**/*.log

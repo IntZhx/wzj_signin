@@ -1,0 +1,442 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>二维码签到</title>
+        <style>
+            :root {
+                /* Morandi - light pink theme */
+                --bg: #f3e7e8;
+                --panel: #f8eff0;
+                --panel-strong: #fbf7f7;
+                --text: #2f2a2a;
+                --muted: #736b6b;
+                --border: rgba(86, 62, 66, 0.16);
+                --shadow: 0 16px 46px rgba(86, 62, 66, 0.14);
+                --accent: #c89aa6;
+                --accent-2: #ead2d7;
+                --danger: #d6a1a8;
+                --ok: #9bb7ad;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            body {
+                margin: 0;
+                font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+                    Helvetica, Arial;
+                background: var(--bg);
+                color: var(--text);
+            }
+
+            .wrap {
+                min-height: 100vh;
+                display: grid;
+                place-items: center;
+                padding: 28px;
+            }
+
+            .card {
+                width: min(520px, 100%);
+                background: rgba(255, 255, 255, 0.76);
+                border: 1px solid var(--border);
+                border-radius: 22px;
+                box-shadow: var(--shadow);
+                overflow: hidden;
+            }
+
+            .head {
+                padding: 18px 18px 10px 18px;
+                display: flex;
+                align-items: baseline;
+                justify-content: space-between;
+                gap: 12px;
+            }
+
+            h1 {
+                margin: 0;
+                font-size: 16px;
+                font-weight: 800;
+                letter-spacing: 0.2px;
+            }
+
+            .time {
+                font-size: 12px;
+                color: var(--muted);
+                white-space: nowrap;
+            }
+
+            .body {
+                padding: 10px 18px 18px 18px;
+                display: grid;
+                gap: 14px;
+            }
+
+            .hint {
+                font-size: 13px;
+                color: var(--muted);
+                line-height: 1.6;
+            }
+
+            .qrbox {
+                width: 100%;
+                display: grid;
+                place-items: center;
+                padding: 14px;
+                border-radius: 18px;
+                border: 1px solid var(--border);
+                background: var(--panel-strong);
+                min-height: 280px;
+            }
+
+            .qrimg {
+                width: 240px;
+                height: 240px;
+                border-radius: 18px;
+                border: 1px solid var(--border);
+                background: rgba(215, 196, 166, 0.18);
+                display: none;
+            }
+
+            .spinner {
+                width: 42px;
+                height: 42px;
+                border-radius: 999px;
+                border: 3px solid rgba(139, 122, 115, 0.22);
+                border-top-color: rgba(139, 122, 115, 0.6);
+                animation: spin 0.9s linear infinite;
+            }
+
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .row {
+                display: flex;
+                gap: 10px;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            /* Buttons (match home page styles) */
+            .pill {
+                border: 1px solid var(--border);
+                border-radius: 999px;
+                background: rgba(234, 210, 215, 0.55);
+                color: var(--text);
+                padding: 10px 14px;
+                font-size: 13px;
+                font-weight: 800;
+                cursor: pointer;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                transition: transform 120ms ease, filter 180ms ease, background 180ms ease,
+                    border-color 180ms ease, color 180ms ease;
+                will-change: transform;
+            }
+
+            .pill:hover {
+                transform: translateY(-1px);
+                filter: brightness(1.03);
+            }
+
+            .pill:active {
+                transform: translateY(0) scale(0.98);
+                filter: brightness(0.98);
+            }
+
+            .pill:focus-visible {
+                box-shadow: 0 0 0 3px rgba(200, 154, 166, 0.26);
+            }
+
+            .pill.primary {
+                background: rgba(200, 154, 166, 0.28);
+                border-color: rgba(200, 154, 166, 0.38);
+            }
+
+            .pill:disabled {
+                opacity: 0.7;
+                cursor: not-allowed;
+            }
+
+            .ghost {
+                border: 1px solid var(--border);
+                border-radius: 999px;
+                padding: 10px 14px;
+                background: rgba(234, 210, 215, 0.45);
+                color: var(--text);
+                font-size: 13px;
+                font-weight: 800;
+                cursor: pointer;
+                text-decoration: none;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                transition: transform 120ms ease, filter 180ms ease, background 180ms ease,
+                    border-color 180ms ease, color 180ms ease;
+                will-change: transform;
+            }
+
+            .ghost:hover {
+                transform: translateY(-1px);
+                filter: brightness(1.03);
+            }
+
+            .ghost:active {
+                transform: translateY(0) scale(0.98);
+                filter: brightness(0.98);
+            }
+
+            .ghost:focus-visible {
+                box-shadow: 0 0 0 3px rgba(200, 154, 166, 0.26);
+            }
+
+            .ghost:disabled {
+                opacity: 0.7;
+                cursor: not-allowed;
+            }
+
+            .progress {
+                height: 10px;
+                background: rgba(139, 122, 115, 0.14);
+                border-radius: 999px;
+                overflow: hidden;
+                border: 1px solid var(--border);
+            }
+
+            .bar {
+                height: 100%;
+                width: 0%;
+                background: rgba(215, 196, 166, 0.75);
+                transition: width 0.2s linear;
+            }
+
+            .meta {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 10px;
+                font-size: 12px;
+                color: var(--muted);
+            }
+
+            .mono {
+                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                    "Liberation Mono", "Courier New", monospace;
+                word-break: break-all;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="wrap">
+            <div class="card">
+                <div class="head">
+                    <h1>二维码签到</h1>
+                    <div class="time" id="datetime">--</div>
+                </div>
+
+                <div class="body">
+                    <div class="hint" id="statusText">正在等待二维码生成（自动刷新中）…</div>
+
+                    <div class="qrbox">
+                        <div class="spinner" id="spinner" aria-label="Loading"></div>
+                        <img id="qrcodeImage" class="qrimg" alt="扫描此二维码签到" />
+                    </div>
+
+                    <div class="meta">
+                        <div>
+                            signId：<span class="mono" id="signIdText">--</span>
+                        </div>
+                        <div>剩余：<span id="countdown">--</span></div>
+                    </div>
+
+                    <div class="progress"><div class="bar" id="progressBar"></div></div>
+
+                    <div class="row">
+                        <button class="pill primary" id="refreshBtn" type="button">手动刷新</button>
+                        <button class="ghost" id="copyBtn" type="button">复制二维码链接</button>
+                    </div>
+
+                    <div class="hint mono" id="qrcodeText">（二维码链接会显示在这里）</div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const urlParams = new URLSearchParams(window.location.search);
+            const sign = urlParams.get("sign") || "";
+            const course = urlParams.get("course") || "";
+
+            const statusText = document.getElementById("statusText");
+            const datetimeEl = document.getElementById("datetime");
+            const signIdText = document.getElementById("signIdText");
+            const countdownEl = document.getElementById("countdown");
+            const progressBar = document.getElementById("progressBar");
+            const qrcodeText = document.getElementById("qrcodeText");
+            const qrcodeImage = document.getElementById("qrcodeImage");
+            const spinner = document.getElementById("spinner");
+            const refreshBtn = document.getElementById("refreshBtn");
+            const copyBtn = document.getElementById("copyBtn");
+
+            signIdText.textContent = sign || "--";
+
+            let lastQrUrl = "";
+            let triedFallback = false;
+            let cycleStartAt = 0;
+            let lastCycleIndex = 0;
+            const TTL_MS = 10 * 1000;
+
+            function updateTime() {
+                const now = new Date();
+                const timeString = now.toLocaleTimeString("zh-CN", { hour12: false });
+                const dateString = now.toLocaleDateString("zh-CN");
+                datetimeEl.textContent = `${dateString} ${timeString}`;
+            }
+
+            async function safeReadJson(response) {
+                try {
+                    return await response.json();
+                } catch {
+                    return null;
+                }
+            }
+
+            function renderQr(qrUrl) {
+                qrcodeText.textContent = qrUrl;
+                triedFallback = false;
+                // 优先直接显示（若 qrUrl 本身就是图片地址/ dataURL，这一步就能直接出图）
+                qrcodeImage.dataset.mode = "direct";
+                qrcodeImage.src = qrUrl;
+                qrcodeImage.style.display = "block";
+                spinner.style.display = "none";
+            }
+
+            // 若 direct 模式加载失败（例如 qrUrl 不是图片），自动回退为“把链接编码成二维码”
+            qrcodeImage.addEventListener("error", () => {
+                if (triedFallback) return;
+                if (qrcodeImage.dataset.mode !== "direct") return;
+                if (!lastQrUrl) return;
+
+                triedFallback = true;
+                qrcodeImage.dataset.mode = "encoded";
+                qrcodeImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(lastQrUrl)}`;
+            });
+
+            function renderWaiting() {
+                qrcodeImage.style.display = "none";
+                spinner.style.display = "block";
+                qrcodeText.textContent = "（二维码链接会显示在这里）";
+            }
+
+            function tickCountdown() {
+                if (!cycleStartAt) {
+                    countdownEl.textContent = "--";
+                    progressBar.style.width = "0%";
+                    return;
+                }
+                const now = Date.now();
+                const elapsed = Math.max(0, now - cycleStartAt);
+                const cycleIndex = Math.floor(elapsed / TTL_MS);
+
+                // 每进入一个新周期就尝试拉取新二维码（不会导致页面重载）
+                if (cycleIndex !== lastCycleIndex) {
+                    lastCycleIndex = cycleIndex;
+                    fetchQRCode({ forceHint: false });
+                }
+
+                const inCycleElapsed = elapsed % TTL_MS;
+                const left = TTL_MS - inCycleElapsed;
+                countdownEl.textContent = (left / 1000).toFixed(1) + "s";
+                progressBar.style.width = ((left / TTL_MS) * 100).toFixed(2) + "%";
+
+                // 如果超过 1 个周期仍未拿到新码，提示但不隐藏二维码（避免“整页刷新”观感）
+                if (cycleIndex >= 1) {
+                    statusText.textContent = "正在等待新二维码（自动刷新中）…";
+                }
+            }
+
+            async function fetchQRCode({ forceHint } = { forceHint: false }) {
+                if (!sign) {
+                    statusText.textContent = "缺少 sign 参数";
+                    renderWaiting();
+                    return;
+                }
+                try {
+                    const resp = await fetch("/qr/" + encodeURIComponent(sign), { method: "GET", cache: "no-store" });
+                    const data = await safeReadJson(resp);
+                    const qrUrl = data && data.qrUrl ? String(data.qrUrl) : "";
+
+                    if (!qrUrl) {
+                        if (forceHint || !lastQrUrl) {
+                            statusText.textContent = "正在等待二维码生成（自动刷新中）…";
+                            renderWaiting();
+                        }
+                        return;
+                    }
+
+                    if (qrUrl !== lastQrUrl) {
+                        lastQrUrl = qrUrl;
+                        renderQr(qrUrl);
+                        // 只有二维码变化时才重置周期
+                        cycleStartAt = Date.now();
+                        lastCycleIndex = 0;
+                        statusText.textContent = "二维码已更新（自动刷新中）";
+                    } else {
+                        // 二维码未变化：不重置周期，避免进度条跳回起点
+                        if (!cycleStartAt) {
+                            cycleStartAt = Date.now();
+                            lastCycleIndex = 0;
+                        }
+                        statusText.textContent = "二维码有效期内（自动刷新中）";
+                    }
+                } catch (e) {
+                    statusText.textContent = "获取二维码失败，请检查网络或后端日志";
+                }
+            }
+
+            refreshBtn.addEventListener("click", () => fetchQRCode({ forceHint: true }));
+            copyBtn.addEventListener("click", async () => {
+                if (!lastQrUrl) return;
+                try {
+                    await navigator.clipboard.writeText(lastQrUrl);
+                    statusText.textContent = "已复制二维码链接";
+                } catch {
+                    statusText.textContent = "复制失败：浏览器不允许或不支持剪贴板 API";
+                }
+            });
+
+            // 初始化
+            updateTime();
+
+            // 如果带了 courseId，就先触发一次后端 WS 监听（避免服务重启/较晚打开导致一直无码）
+            (async () => {
+                if (course && sign) {
+                    try {
+                        await fetch(
+                            "/qrws/start?courseId=" + encodeURIComponent(course) + "&signId=" + encodeURIComponent(sign),
+                            { method: "GET", cache: "no-store" }
+                        );
+                    } catch {
+                        // ignore
+                    }
+                }
+            })();
+
+            fetchQRCode({ forceHint: true });
+
+            // 时间显示
+            setInterval(updateTime, 1000);
+            // 自动轮询二维码（解决“必须手动刷新才出现”）
+            setInterval(fetchQRCode, 400);
+            // 倒计时条
+            setInterval(tickCountdown, 100);
+        </script>
+    </body>
+</html>
