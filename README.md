@@ -51,6 +51,9 @@ docker compose up -d --build
 - 应用：http://localhost:18080/home
 - Redis：仅供容器内部使用（地址 `redis:6379`，默认不再映射到宿主机端口）
 
+数据持久化：默认使用 `./data` 目录作为绑定挂载。首次运行时 `data/*.json` 可能不存在，保存设置（例如新增 GPS 标签）时会自动创建。
+
+
 ### 方式二：纯 Docker（使用外部 Redis）
 
 ```bash
@@ -75,8 +78,12 @@ docker run -d \
 
 不提供 `config.yml` 也能启动（使用默认值）。
 
+推荐把真实配置放在：`local/config.yml`（已被 `.gitignore` 忽略，适合放个人/本机配置）。
+
 
 模板文件：`examples/config.example.yml`（复制一份到 `local/config.yml` 再修改）。
+
+首次运行时如果检测到你还没有任何 `config.yml`，程序会尝试自动从 `examples/config.example.yml` 生成一份 `local/config.yml` 作为起点（不会覆盖你已有的文件）。
 
 ### 2) 敏感配置：data/secrets.json（本机）
 
@@ -94,6 +101,8 @@ docker run -d \
 - `data/appconfig.json`：UI 配置（不含密码）
 - `data/frontend_settings.json`：默认邮箱、GPS 标签等
 - `data/secrets.json`：敏感信息（密码类）
+
+首次运行时这些 `data/*.json` 可能不存在，程序会自动创建（不会覆盖已有内容）。
 
 ## Web 页面说明
 

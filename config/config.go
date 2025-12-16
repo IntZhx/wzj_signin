@@ -15,6 +15,7 @@ import (
 const overrideDir = "data"
 const overrideFile = "appconfig.json"
 const secretsFile = "secrets.json"
+const localDir = "local"
 
 type AppConfig struct {
 	NormalDelay int        `json:"normal_delay"`
@@ -62,6 +63,12 @@ func Load() error {
 		viper.SetDefault("mail.username", "")
 		viper.SetDefault("mail.password", "")
 		viper.SetDefault("mail.from", "")
+
+		// First-run bootstrap (so a fresh clone can save settings immediately)
+		if err := ensureLocalFiles(); err != nil {
+			loadErr = err
+			return
+		}
 
 		// Search order: local (untracked) -> repo root -> ./config
 		viper.AddConfigPath("./local")
@@ -130,6 +137,124 @@ func Load() error {
 		}
 	})
 	return loadErr
+}
+
+func ensureLocalFiles() error {
+	// Ensure directories exist.
+	if err := os.MkdirAll(overrideDir, 0o755); err != nil {
+		return fmt.Errorf("mkdir %s: %w", overrideDir, err)
+	}
+	// local/ is optional; create it to make onboarding smoother.
+	if err := os.MkdirAll(localDir, 0o755); err != nil {
+		return fmt.Errorf("mkdir %s: %w", localDir, err)
+	}
+
+	// Ensure default JSON files exist (do not overwrite).
+	defaultOverrides := AppConfig{
+		NormalDelay: 20,
+		Mail: MailConfig{
+			Enabled:  false,
+			Host:     "",
+			Port:     0,
+			Username: "",
+			Password: "", // never used; kept empty
+			From:     "",
+		},
+	}
+	defaultFrontend := FrontendSettings{DefaultEmail: "", GpsLabels: []FrontendGpsLabel{}}
+	defaultSecrets := Secrets{RedisPassword: "", MailPassword: ""}
+
+	if err := ensureJSONFileIfMissing(overridesPath(), defaultOverrides); err != nil {
+		return err
+	}
+	if err := ensureJSONFileIfMissing(frontendSettingsPath(), defaultFrontend); err != nil {
+		return err
+	}
+	if err := ensureJSONFileIfMissing(secretsPath(), defaultSecrets); err != nil {
+		return err
+	}
+
+	// Optional convenience: if this is a fresh clone and no config exists yet,
+	// seed local/config.yml from examples/config.example.yml (local/ is gitignored).
+	if err := maybeSeedLocalConfig(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func maybeSeedLocalConfig() error {
+	// Do nothing if any config file already exists.
+	_, localErr := os.Stat(filepath.Join(localDir, "config.yml"))
+	_, rootErr := os.Stat("config.yml")
+	_, cfgDirErr := os.Stat(filepath.Join("config", "config.yml"))
+	if localErr == nil || rootErr == nil || cfgDirErr == nil {
+		return nil
+	}
+	if !errors.Is(localErr, os.ErrNotExist) {
+		return fmt.Errorf("stat %s: %w", filepath.Join(localDir, "config.yml"), localErr)
+	}
+	if !errors.Is(rootErr, os.ErrNotExist) {
+		return fmt.Errorf("stat config.yml: %w", rootErr)
+	}
+	if !errors.Is(cfgDirErr, os.ErrNotExist) {
+		return fmt.Errorf("stat %s: %w", filepath.Join("config", "config.yml"), cfgDirErr)
+	}
+
+	examplePath := filepath.Join("examples", "config.example.yml")
+	b, err := os.ReadFile(examplePath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return fmt.Errorf("read %s: %w", examplePath, err)
+	}
+
+	target := filepath.Join(localDir, "config.yml")
+	f, err := os.OpenFile(target, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		if errors.Is(err, os.ErrExist) {
+			return nil
+		}
+		return fmt.Errorf("create %s: %w", target, err)
+	}
+	defer f.Close()
+
+	if _, err := f.Write(b); err != nil {
+		return fmt.Errorf("write %s: %w", target, err)
+	}
+	return nil
+}
+
+func ensureJSONFileIfMissing(path string, v any) error {
+	if _, err := os.Stat(path); err == nil {
+		return nil
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("stat %s: %w", path, err)
+	}
+
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal %s: %w", path, err)
+	}
+	b = append(b, '\n')
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("mkdir %s: %w", filepath.Dir(path), err)
+	}
+
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		if errors.Is(err, os.ErrExist) {
+			return nil
+		}
+		return fmt.Errorf("create %s: %w", path, err)
+	}
+	defer f.Close()
+
+	if _, err := f.Write(b); err != nil {
+		return fmt.Errorf("write %s: %w", path, err)
+	}
+	return nil
 }
 
 func GetForUI() (AppConfigForUI, error) {

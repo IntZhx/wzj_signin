@@ -18,10 +18,9 @@ services:
     ports:
       - "18080:8080"
     volumes:
-      - app-data:/app/data
+      - ./data:/app/data
     # If you prefer secrets.json on host:
     # - ./data/secrets.json:/app/data/secrets.json:ro
 
 volumes:
   redis-data:
-  app-data:
