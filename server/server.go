@@ -43,6 +43,7 @@ func Start() {
 	r.GET("/qr/:signId", QRCodeHandler)
 	r.GET("/qrws/start", StartQRCodeWSHandler)
 	r.GET("/pendingqr/:openId", PendingQRCodeHandler)
+	r.GET("/pendingevent/:openId", PendingEventHandler)
 	r.GET("/api/appconfig", GetAppConfigHandler)
 	r.POST("/api/appconfig", UpdateAppConfigHandler)
 	r.GET("/api/frontendsettings", GetFrontendSettingsHandler)

@@ -42,6 +42,10 @@ func RedisSet(key string, value interface{}, expiration time.Duration) *redis.St
 	return redisClient.Set(ctx, key, value, expiration)
 }
 
+func RedisSetNX(key string, value interface{}, expiration time.Duration) *redis.BoolCmd {
+	return redisClient.SetNX(ctx, key, value, expiration)
+}
+
 // 后面要接上.Result()
 func RedisGet(key string) *redis.StringCmd {
 	return redisClient.Get(ctx, key)
@@ -66,4 +70,16 @@ func RedisGetAllMatchedKeys(pattern string) []string {
 		return nil
 	}
 	return result
+}
+
+func RedisLPush(key string, values ...interface{}) *redis.IntCmd {
+	return redisClient.LPush(ctx, key, values...)
+}
+
+func RedisRPop(key string) *redis.StringCmd {
+	return redisClient.RPop(ctx, key)
+}
+
+func RedisLTrim(key string, start, stop int64) *redis.StatusCmd {
+	return redisClient.LTrim(ctx, key, start, stop)
 }

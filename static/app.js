@@ -338,48 +338,75 @@
 			if (!openId) return;
 
 			try {
-				const resp = await fetch("/pendingqr/" + encodeURIComponent(openId), {
-					method: "GET",
-					cache: "no-store",
-				});
-				if (!resp.ok) return;
-				const data = await safeReadJson(resp);
-				if (!data) return;
+				// 1) QR pending
+				{
+					const resp = await fetch("/pendingqr/" + encodeURIComponent(openId), {
+						method: "GET",
+						cache: "no-store",
+					});
+					if (resp.ok) {
+						const data = await safeReadJson(resp);
+						if (data) {
+							const url = data.url ? String(data.url) : "";
+							const signId = data.signId ? String(data.signId) : "";
+							if (url) {
+								const last = pendingQrLastShownByOpenId[openId] || "";
+								if (url !== last) {
+									pendingQrLastShownByOpenId[openId] = url;
+									addEvent({ type: "qr", url, signId, openId });
 
-				const url = data.url ? String(data.url) : "";
-				const signId = data.signId ? String(data.signId) : "";
-				if (!url) return;
+									// 尝试自动打开新标签页（可能会被浏览器拦截）
+									let opened = false;
+									try {
+										const w = window.open(url, "_blank", "noopener,noreferrer");
+										opened = !!w;
+									} catch {
+										opened = false;
+									}
 
-				const last = pendingQrLastShownByOpenId[openId] || "";
-				if (url === last) return;
-				pendingQrLastShownByOpenId[openId] = url;
+									if (modalActionBtn) {
+										modalActionBtn.style.display = "inline-flex";
+										modalActionBtn.textContent = "打开二维码页面";
+										modalActionBtn.onclick = () =>
+											window.open(url, "_blank", "noopener,noreferrer");
+									}
 
-				addEvent({ type: "qr", url, signId, openId });
+									const tip =
+										"检测到二维码签到，需要手动用微信扫一扫完成。\n" +
+										(openId ? "openid：" + openId + "\n" : "") +
+										(signId ? "signId：" + signId + "\n" : "") +
+										"点击『打开二维码页面』即可查看二维码。\n" +
+										(!opened ? "（若未自动打开新页面，可能被浏览器拦截弹窗）" : "");
 
-				// 尝试自动打开新标签页（可能会被浏览器拦截）
-				let opened = false;
-				try {
-					const w = window.open(url, "_blank", "noopener,noreferrer");
-					opened = !!w;
-				} catch {
-					opened = false;
+									openModal(tip);
+								}
+							}
+						}
+					}
 				}
 
-				if (modalActionBtn) {
-					modalActionBtn.style.display = "inline-flex";
-					modalActionBtn.textContent = "打开二维码页面";
-					modalActionBtn.onclick = () =>
-						window.open(url, "_blank", "noopener,noreferrer");
+				// 2) Sign-in pending events (GPS/normal)
+				{
+					const resp = await fetch("/pendingevent/" + encodeURIComponent(openId), {
+						method: "GET",
+						cache: "no-store",
+					});
+					if (resp.ok) {
+						const data = await safeReadJson(resp);
+						if (data && data.ok && data.type) {
+							addEvent({
+								type: String(data.type),
+								mode: data.mode ? String(data.mode) : "",
+								openId: data.openId ? String(data.openId) : openId,
+								courseId: data.courseId,
+								signId: data.signId,
+								courseName: data.courseName ? String(data.courseName) : "",
+								studentRank: data.studentRank,
+								signRank: data.signRank,
+							});
+						}
+					}
 				}
-
-				const tip =
-					"检测到二维码签到，需要手动用微信扫一扫完成。\n" +
-					(openId ? "openid：" + openId + "\n" : "") +
-					(signId ? "signId：" + signId + "\n" : "") +
-					"点击『打开二维码页面』即可查看二维码。\n" +
-					(!opened ? "（若未自动打开新页面，可能被浏览器拦截弹窗）" : "");
-
-				openModal(tip);
 
 				// 如果在历史页，顺便刷新
 				if ($id("eventList")) renderEvents();
@@ -570,13 +597,33 @@
 				const openId = String(e.openId || "");
 				const gpsLabel = String(e.gpsLabel || "");
 				const loc = String(e.location || "");
-				const title = gpsLabel || loc ? "GPS 签到" : "提交 OpenID";
+				const title = "提交 OpenID";
 				card.innerHTML = `
 					<div style="font-weight:800">${title}</div>
 					<div class="hint" style="margin-top:4px">${when}</div>
 					<div class="hint mono" style="margin-top:10px">openid: ${openId}</div>
-					${gpsLabel ? `<div class="hint" style="margin-top:6px">标签：<strong>${gpsLabel}</strong></div>` : ""}
-					${loc ? `<div class="hint mono" style="margin-top:6px">gps: ${loc}</div>` : ""}
+					${gpsLabel ? `<div class="hint" style="margin-top:6px">GPS 标签：<strong>${gpsLabel}</strong></div>` : ""}
+					${loc ? `<div class="hint mono" style="margin-top:6px">GPS 坐标：${loc}</div>` : ""}
+				`;
+			} else if (e.type === "signin") {
+				const openId = String(e.openId || "");
+				const mode = String(e.mode || "");
+				const courseName = String(e.courseName || "");
+				const courseId = e.courseId != null ? String(e.courseId) : "";
+				const signId = e.signId != null ? String(e.signId) : "";
+				const title = mode === "gps" ? "GPS 签到成功" : "普通签到成功";
+				const rankLine =
+					e.studentRank != null && e.signRank != null
+						? `签到No.<span class="mono">${String(e.signRank)}</span> · 你是第 <span class="mono">${String(
+								e.studentRank
+							)}</span> 个`
+						: "";
+				card.innerHTML = `
+					<div style="font-weight:800">${title}</div>
+					<div class="hint" style="margin-top:4px">${when}${courseName ? ` · ${courseName}` : ""}</div>
+					${openId ? `<div class="hint mono" style="margin-top:10px">openid: ${openId}</div>` : ""}
+					${courseId || signId ? `<div class="hint" style="margin-top:6px">C${courseId || "?"} / S${signId || "?"}</div>` : ""}
+					${rankLine ? `<div class="hint" style="margin-top:6px">${rankLine}</div>` : ""}
 				`;
 			} else {
 				card.innerHTML = `<div style="font-weight:800">事件</div><div class="hint" style="margin-top:4px">${when}</div>`;

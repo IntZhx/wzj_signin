@@ -119,6 +119,25 @@ func Signin(sign model.SignData, openId string) {
 		return
 	}
 
+	// 1.1 避免并发/间隔过短导致重复请求：加一个短期 in-flight 锁
+	// 说明：startTimer 可能在上一次 Signin 还在 delay 时又启动新的 goroutine。
+	inflightKey := fmt.Sprintf("wzj:inflight:%s%d", openId, signId)
+	lockSeconds := 120
+	if sign.IsGPS == 1 || ((sign.IsGPS + sign.IsQR) == 0) {
+		if d := viper.GetInt("app.normal_delay") + 120; d > lockSeconds {
+			lockSeconds = d
+		}
+	}
+	locked, err := db.RedisSetNX(inflightKey, 1, time.Duration(lockSeconds)*time.Second).Result()
+	if err != nil {
+		log.Println(randomNum, "Error acquiring inflight lock:", err)
+	}
+	if !locked {
+		log.Println(randomNum, "In-flight Sign", openId, signId)
+		return
+	}
+	defer db.RedisDel(inflightKey)
+
 	// 2. 二维码签到处理
 	if sign.IsQR != 0 {
 		serverAddress := effectiveServerAddress()
@@ -221,9 +240,45 @@ func Signin(sign model.SignData, openId string) {
 	defer response.Body.Close()
 
 	body, _ := io.ReadAll(response.Body)
-	log.Println(randomNum, "Response:", string(body))
+	bodyStr := string(body)
+	log.Println(randomNum, "Response:", bodyStr)
 
-	if strings.Contains(string(body), "你已经签到成功") {
+	// 成功判定：有时返回 JSON(studentRank)，有时返回文本(你已经签到成功)
+	success := strings.Contains(bodyStr, "你已经签到成功") || strings.Contains(bodyStr, "studentRank")
+
+	// Record successful sign-in event for history page
+	if success {
+		mode := "normal"
+		if sign.IsGPS == 1 {
+			mode = "gps"
+		}
+
+		evt := map[string]interface{}{
+			"type":       "signin",
+			"mode":       mode,
+			"openId":     openId,
+			"courseId":   courseId,
+			"signId":     signId,
+			"courseName": courseName,
+		}
+
+		// If rank info exists, include it
+		if strings.Contains(bodyStr, "studentRank") {
+			var signResult model.SignResultData
+			_ = json.Unmarshal(body, &signResult)
+			evt["studentRank"] = signResult.StudentRank
+			evt["signRank"] = signResult.SignRank
+		}
+
+		if b, err := json.Marshal(evt); err == nil {
+			key := "wzj:evt:" + openId
+			_ = db.RedisLPush(key, string(b)).Err()
+			_ = db.RedisLTrim(key, 0, 49).Err()
+			_ = db.RedisExpire(key, 24*time.Hour).Err()
+		}
+	}
+
+	if success {
 		CoolDownFor5Min(openId, signId)
 	}
 
