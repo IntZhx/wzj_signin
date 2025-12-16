@@ -428,11 +428,21 @@
 
 		const events = loadEvents();
 		const qrEvents = events.filter((e) => e && e.type === "qr" && typeof e.ts === "number");
+		const gpsSigninEvents = events.filter(
+			(e) =>
+				e &&
+				e.type === "signin" &&
+				e.mode === "gps" &&
+				typeof e.ts === "number"
+		);
+		// “累计提交 OpenID 次数”= 只统计 submit
 		const submitEvents = events.filter((e) => e && e.type === "submit" && typeof e.ts === "number");
+		// “签到提醒次数”= 二维码提醒 + GPS 签到成功
+		const remindEvents = [...qrEvents, ...gpsSigninEvents].sort((a, b) => (b.ts || 0) - (a.ts || 0));
 
-		statTotalQr.textContent = String(qrEvents.length);
+		statTotalQr.textContent = String(remindEvents.length);
 		statTotalSubmit.textContent = String(submitEvents.length);
-		statLastQr.textContent = qrEvents.length ? "最近一次：" + formatTime(qrEvents[0].ts) : "最近一次：—";
+		statLastQr.textContent = remindEvents.length ? "最近一次：" + formatTime(remindEvents[0].ts) : "最近一次：—";
 		statLastSubmit.textContent = submitEvents.length ? "最近一次：" + formatTime(submitEvents[0].ts) : "最近一次：—";
 
 		const days = [];
@@ -441,7 +451,7 @@
 		for (let i = 6; i >= 0; i--) days.push(new Date(now.getTime() - i * 86400000));
 
 		const dayCount = new Map();
-		for (const e of qrEvents) {
+		for (const e of remindEvents) {
 			const k = toLocalDateKey(e.ts);
 			dayCount.set(k, (dayCount.get(k) || 0) + 1);
 		}
